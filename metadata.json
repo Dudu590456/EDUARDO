@@ -1,0 +1,6 @@
+{
+  "name": "NexFin Premium",
+  "description": "Aplicativo financeiro moderno e futurista com tecnologia premium: controle de saldo, receitas, despesas com anexos, metas, parcelamentos, calendário financeiro, notificações e sincronização em tempo real integrada com o Supabase.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
