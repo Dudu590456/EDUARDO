@@ -1,30 +1,15 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 
-let supabaseClient: SupabaseClient | null = null;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://tnbrjlpocuzvruertsmn.supabase.co";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_xSGftvyOSLFK9YgeqsrJzQ_KJ5Mv8YP";
 
-export function isSupabaseConfigured(): boolean {
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  return !!(supabaseUrl && supabaseAnonKey);
+export const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+export function isSupabaseConfigured() {
+  return !!supabaseUrl && !!supabaseKey;
 }
 
-export function getSupabaseClient(): SupabaseClient | null {
-  if (!supabaseClient) {
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return null;
-    }
-
-    supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storage: typeof window !== "undefined" ? window.localStorage : undefined,
-      },
-    });
-  }
+export function getSupabaseClient() {
+  if (!isSupabaseConfigured()) return null;
   return supabaseClient;
 }
