@@ -52,8 +52,8 @@ export default function GlobalSearch({
     ? transactions.filter(
         (t) =>
           t.description.toLowerCase().includes(normalizedQuery) ||
-          t.category.toLowerCase().includes(normalizedQuery) ||
-          (PRESET_CATEGORIES[t.category]?.label || "").toLowerCase().includes(normalizedQuery)
+          (t.category || "Geral").toLowerCase().includes(normalizedQuery) ||
+          (PRESET_CATEGORIES[t.category || "Geral"]?.label || "").toLowerCase().includes(normalizedQuery)
       )
     : [];
 
@@ -62,7 +62,7 @@ export default function GlobalSearch({
     : [];
 
   const filteredInstallments = normalizedQuery
-    ? installments.filter((i) => i.product_name.toLowerCase().includes(normalizedQuery))
+    ? installments.filter((i) => i.description.toLowerCase().includes(normalizedQuery))
     : [];
 
   const totalResults =
@@ -126,8 +126,8 @@ export default function GlobalSearch({
                   </h3>
                   <div className="space-y-1">
                     {filteredTransactions.slice(0, 5).map((t) => {
-                      const categoryData = PRESET_CATEGORIES[t.category];
-                      const isIncome = t.type === "income" || t.amount > 0;
+                      const categoryData = PRESET_CATEGORIES[t.category || "Geral"];
+                      const isIncome = (t.type as string) === "receita" || (t.type as string) === "income" || t.amount > 0;
                       return (
                         <div
                           key={t.id}
@@ -194,7 +194,7 @@ export default function GlobalSearch({
                               {g.name}
                             </p>
                             <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                              Meta: R$ {g.target_amount.toLocaleString("pt-BR")} • Prazo: {g.limit_date}
+                              Meta: R$ {g.target_amount.toLocaleString("pt-BR")} • Prazo: {g.deadline}
                             </p>
                           </div>
                         </div>
@@ -233,16 +233,16 @@ export default function GlobalSearch({
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-slate-200 group-hover:text-amber-300">
-                              {i.product_name}
+                              {i.description}
                             </p>
                             <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                              {i.total_installments - i.remaining_installments}/{i.total_installments} parcelas pagas • R$ {i.value_per_installment.toLocaleString("pt-BR")}/mês
+                              {i.current_installment}/{i.installments_count} parcelas pagas • R$ {(i.total_amount / i.installments_count).toLocaleString("pt-BR")}/mês
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="text-xs bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded text-amber-400 font-bold font-mono">
-                            R$ {i.total_value.toLocaleString("pt-BR")}
+                            R$ {i.total_amount.toLocaleString("pt-BR")}
                           </span>
                           <Eye className="w-4 h-4 text-slate-600 group-hover:text-amber-400 opacity-0 group-hover:opacity-100 transition-all" />
                         </div>

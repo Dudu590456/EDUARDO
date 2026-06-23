@@ -29,9 +29,10 @@ const formatCurrency = (val: number) => {
 
 interface AdvancedPremiumModulesProps {
   userEmail: string;
+  offlineMode: boolean;
 }
 
-export default function AdvancedPremiumModules({ userEmail }: AdvancedPremiumModulesProps) {
+export default function AdvancedPremiumModules({ userEmail, offlineMode }: AdvancedPremiumModulesProps) {
   const [activeTab, setActiveTab] = useState<"family" | "business" | "subscriptions">("family");
 
   // State lists
@@ -56,11 +57,24 @@ export default function AdvancedPremiumModules({ userEmail }: AdvancedPremiumMod
   const [newSubPrice, setNewSubPrice] = useState("");
   const [newSubBill, setNewSubBill] = useState("2026-07-01");
 
-  // Load Premium Data from Supabase
+  // Load Premium Data from Supabase/LocalStorage Cache
   useEffect(() => {
     async function loadPremiumData() {
+      // 1. Recover cache from localStorage immediately
+      try {
+        const cachedFam = localStorage.getItem("nexfin_family_members");
+        const cachedBiz = localStorage.getItem("nexfin_business_transactions");
+        const cachedSubs = localStorage.getItem("nexfin_subscriptions");
+
+        if (cachedFam) setFamilyMembers(JSON.parse(cachedFam));
+        if (cachedBiz) setBusinessTransactions(JSON.parse(cachedBiz));
+        if (cachedSubs) setSubscriptions(JSON.parse(cachedSubs));
+      } catch (e) {
+        console.warn("Sem cache premium inicial", e);
+      }
+
       const active = isSupabaseConfigured();
-      if (!active || !userEmail) return;
+      if (!active || !userEmail || offlineMode) return;
 
       const supabase = getSupabaseClient();
       if (!supabase) return;
@@ -75,14 +89,14 @@ export default function AdvancedPremiumModules({ userEmail }: AdvancedPremiumMod
           .eq("user_id", userId);
 
         if (!famErr && famData) {
-          setFamilyMembers(
-            famData.map((item: any) => ({
-              id: item.id,
-              name: item.name,
-              role: item.role,
-              permission: item.permission as "read" | "write" | "admin",
-            }))
-          );
+          const mappedFam = famData.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            role: item.role,
+            permission: item.permission as "read" | "write" | "admin",
+          }));
+          setFamilyMembers(mappedFam);
+          localStorage.setItem("nexfin_family_members", JSON.stringify(mappedFam));
         }
 
         // 2. Fetch business transactions
@@ -93,16 +107,16 @@ export default function AdvancedPremiumModules({ userEmail }: AdvancedPremiumMod
           .order("date", { ascending: false });
 
         if (!bizErr && bizData) {
-          setBusinessTransactions(
-            bizData.map((item: any) => ({
-              id: item.id,
-              client: item.client,
-              type: item.type as "receita" | "despesa",
-              description: item.description,
-              amount: parseFloat(item.amount),
-              date: item.date,
-            }))
-          );
+          const mappedBiz = bizData.map((item: any) => ({
+            id: item.id,
+            client: item.client,
+            type: item.type as "receita" | "despesa",
+            description: item.description,
+            amount: parseFloat(item.amount),
+            date: item.date,
+          }));
+          setBusinessTransactions(mappedBiz);
+          localStorage.setItem("nexfin_business_transactions", JSON.stringify(mappedBiz));
         }
 
         // 3. Fetch subscriptions
@@ -112,16 +126,16 @@ export default function AdvancedPremiumModules({ userEmail }: AdvancedPremiumMod
           .eq("user_id", userId);
 
         if (!subErr && subData) {
-          setSubscriptions(
-            subData.map((item: any) => ({
-              id: item.id,
-              name: item.name,
-              price: parseFloat(item.price),
-              nextBill: item.next_bill,
-              logo: item.logo || "💳",
-              active: item.active,
-            }))
-          );
+          const mappedSubs = subData.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            price: parseFloat(item.price),
+            nextBill: item.next_bill,
+            logo: item.logo || "💳",
+            active: item.active,
+          }));
+          setSubscriptions(mappedSubs);
+          localStorage.setItem("nexfin_subscriptions", JSON.stringify(mappedSubs));
         }
       } catch (err) {
         console.error("Erro ao carregar dados do Supabase:", err);
@@ -129,7 +143,7 @@ export default function AdvancedPremiumModules({ userEmail }: AdvancedPremiumMod
     }
 
     loadPremiumData();
-  }, [userEmail]);
+  }, [userEmail, offlineMode]);
 
   // Invite Family Member
   const handleInviteMember = async (e: React.FormEvent) => {
@@ -144,36 +158,49 @@ export default function AdvancedPremiumModules({ userEmail }: AdvancedPremiumMod
       permission: invitePerm as "read" | "write",
     };
 
-    setFamilyMembers((prev) => [...prev, newMember]);
+    const updatedMembers = [...familyMembers, newMember];
+    setFamilyMembers(updatedMembers);
+    localStorage.setItem("nexfin_family_members", JSON.stringify(updatedMembers));
     setInviteName("");
-    setFamilyStatusMsg(`Convite de acesso enviado com sucesso para ${inviteName}!`);
+    setFamilyStatusMsg(`Membro ${inviteName} salvo localmente!`);
     setTimeout(() => setFamilyStatusMsg(""), 4000);
 
     const active = isSupabaseConfigured();
-    if (active && userEmail) {
-      const supabase = getSupabaseClient();
-      if (supabase) {
-        const userId = "user-" + userEmail.replace(/[@.]/g, "-");
-        await supabase.from("family_members").insert({
-          id: memberId,
-          user_id: userId,
-          name: inviteName,
-          role: inviteRole,
-          permission: invitePerm,
-        });
+    if (active && userEmail && !offlineMode) {
+      try {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          const userId = "user-" + userEmail.replace(/[@.]/g, "-");
+          await supabase.from("family_members").insert({
+            id: memberId,
+            user_id: userId,
+            name: inviteName,
+            role: inviteRole,
+            permission: invitePerm,
+          });
+          setFamilyStatusMsg(`Convite de acesso para ${inviteName} sincronizado com Supabase!`);
+        }
+      } catch (err) {
+        console.warn("Erro ao sincronizar com Supabase, salvo apenas localmente.", err);
       }
     }
   };
 
   // Remove Family Member
   const handleRemoveFamilyMember = async (id: string) => {
-    setFamilyMembers((prev) => prev.filter((m) => m.id !== id));
+    const updatedMembers = familyMembers.filter((m) => m.id !== id);
+    setFamilyMembers(updatedMembers);
+    localStorage.setItem("nexfin_family_members", JSON.stringify(updatedMembers));
 
     const active = isSupabaseConfigured();
-    if (active && userEmail) {
-      const supabase = getSupabaseClient();
-      if (supabase) {
-        await supabase.from("family_members").delete().eq("id", id);
+    if (active && userEmail && !offlineMode) {
+      try {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          await supabase.from("family_members").delete().eq("id", id);
+        }
+      } catch (err) {
+        console.warn("Erro ao deletar no Supabase, alteração mantida localmente.", err);
       }
     }
   };
@@ -196,25 +223,31 @@ export default function AdvancedPremiumModules({ userEmail }: AdvancedPremiumMod
       date: today,
     };
 
-    setBusinessTransactions((prev) => [item, ...prev]);
+    const updatedBiz = [item, ...businessTransactions];
+    setBusinessTransactions(updatedBiz);
+    localStorage.setItem("nexfin_business_transactions", JSON.stringify(updatedBiz));
     setBizDesc("");
     setBizAmount("");
     setBizEntity("");
 
     const active = isSupabaseConfigured();
-    if (active && userEmail) {
-      const supabase = getSupabaseClient();
-      if (supabase) {
-        const userId = "user-" + userEmail.replace(/[@.]/g, "-");
-        await supabase.from("business_transactions").insert({
-          id: txId,
-          user_id: userId,
-          client: bizEntity || "Geral",
-          type: bizType,
-          description: bizDesc,
-          amount: parsedAmount,
-          date: today,
-        });
+    if (active && userEmail && !offlineMode) {
+      try {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          const userId = "user-" + userEmail.replace(/[@.]/g, "-");
+          await supabase.from("business_transactions").insert({
+            id: txId,
+            user_id: userId,
+            client: bizEntity || "Geral",
+            type: bizType,
+            description: bizDesc,
+            amount: parsedAmount,
+            date: today,
+          });
+        }
+      } catch (err) {
+        console.warn("Erro ao sincronizar com Supabase, transação PJ salva localmente.", err);
       }
     }
   };
@@ -236,24 +269,30 @@ export default function AdvancedPremiumModules({ userEmail }: AdvancedPremiumMod
       active: true,
     };
 
-    setSubscriptions((prev) => [...prev, newSub]);
+    const updatedSubs = [...subscriptions, newSub];
+    setSubscriptions(updatedSubs);
+    localStorage.setItem("nexfin_subscriptions", JSON.stringify(updatedSubs));
     setNewSubName("");
     setNewSubPrice("");
 
     const active = isSupabaseConfigured();
-    if (active && userEmail) {
-      const supabase = getSupabaseClient();
-      if (supabase) {
-        const userId = "user-" + userEmail.replace(/[@.]/g, "-");
-        await supabase.from("subscriptions").insert({
-          id: subId,
-          user_id: userId,
-          name: newSubName,
-          price: parsedPrice,
-          next_bill: newSubBill,
-          logo: "💳",
-          active: true,
-        });
+    if (active && userEmail && !offlineMode) {
+      try {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          const userId = "user-" + userEmail.replace(/[@.]/g, "-");
+          await supabase.from("subscriptions").insert({
+            id: subId,
+            user_id: userId,
+            name: newSubName,
+            price: parsedPrice,
+            next_bill: newSubBill,
+            logo: "💳",
+            active: true,
+          });
+        }
+      } catch (err) {
+        console.warn("Erro ao sincronizar assinatura com Supabase.", err);
       }
     }
   };
@@ -261,34 +300,44 @@ export default function AdvancedPremiumModules({ userEmail }: AdvancedPremiumMod
   // Toggle Subscription
   const handleToggleSub = async (id: string) => {
     let targetActive = true;
-    setSubscriptions((prev) =>
-      prev.map((s) => {
-        if (s.id === id) {
-          targetActive = !s.active;
-          return { ...s, active: targetActive };
-        }
-        return s;
-      })
-    );
+    const updatedSubs = subscriptions.map((s) => {
+      if (s.id === id) {
+        targetActive = !s.active;
+        return { ...s, active: targetActive };
+      }
+      return s;
+    });
+    setSubscriptions(updatedSubs);
+    localStorage.setItem("nexfin_subscriptions", JSON.stringify(updatedSubs));
 
     const active = isSupabaseConfigured();
-    if (active && userEmail) {
-      const supabase = getSupabaseClient();
-      if (supabase) {
-        await supabase.from("subscriptions").update({ active: targetActive }).eq("id", id);
+    if (active && userEmail && !offlineMode) {
+      try {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          await supabase.from("subscriptions").update({ active: targetActive }).eq("id", id);
+        }
+      } catch (err) {
+        console.warn("Erro ao atualizar assinatura com Supabase.", err);
       }
     }
   };
 
   // Delete Subscription
   const handleDeleteSub = async (id: string) => {
-    setSubscriptions((prev) => prev.filter((s) => s.id !== id));
+    const updatedSubs = subscriptions.filter((s) => s.id !== id);
+    setSubscriptions(updatedSubs);
+    localStorage.setItem("nexfin_subscriptions", JSON.stringify(updatedSubs));
 
     const active = isSupabaseConfigured();
-    if (active && userEmail) {
-      const supabase = getSupabaseClient();
-      if (supabase) {
-        await supabase.from("subscriptions").delete().eq("id", id);
+    if (active && userEmail && !offlineMode) {
+      try {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          await supabase.from("subscriptions").delete().eq("id", id);
+        }
+      } catch (err) {
+        console.warn("Erro ao deletar assinatura no Supabase.", err);
       }
     }
   };

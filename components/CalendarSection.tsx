@@ -61,7 +61,7 @@ export default function CalendarSection({ transactions, goals }: CalendarSection
     const targetDateStr = `${year}-${formattedMonth}-${formattedDay}`;
 
     const items = transactions.filter(t => t.date === targetDateStr);
-    const dayGoals = goals.filter(g => g.limit_date === targetDateStr);
+    const dayGoals = goals.filter(g => g.deadline === targetDateStr);
 
     return { transactions: items, goals: dayGoals };
   };
@@ -72,11 +72,11 @@ export default function CalendarSection({ transactions, goals }: CalendarSection
     const prefix = `${year}-${formattedMonth}`;
 
     const incomes = transactions
-      .filter(t => t.date.startsWith(prefix) && (t.type === "income" || t.amount > 0))
+      .filter(t => t.date.startsWith(prefix) && ((t.type as string) === "receita" || (t.type as string) === "income" || t.amount > 0))
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
     const expenses = transactions
-      .filter(t => t.date.startsWith(prefix) && (t.type === "expense" || t.amount < 0))
+      .filter(t => t.date.startsWith(prefix) && ((t.type as string) === "despesa" || (t.type as string) === "expense" || t.amount < 0))
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
     return { incomes, expenses };
@@ -163,8 +163,8 @@ export default function CalendarSection({ transactions, goals }: CalendarSection
               }
 
               const { transactions: dayTx, goals: dayGoals } = getDayItems(day);
-              const dayIncomes = dayTx.filter(t => t.type === "income" || t.amount > 0).reduce((sum, t) => sum + Math.abs(t.amount), 0);
-              const dayExpenses = dayTx.filter(t => t.type === "expense" || t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0);
+              const dayIncomes = dayTx.filter(t => (t.type as string) === "receita" || (t.type as string) === "income" || t.amount > 0).reduce((sum, t) => sum + Math.abs(t.amount), 0);
+              const dayExpenses = dayTx.filter(t => (t.type as string) === "despesa" || (t.type as string) === "expense" || t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0);
               const hasAlerts = dayExpenses > 0;
               
               const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();

@@ -45,11 +45,11 @@ export default function DashboardGrid({ transactions, goals, onOpenModal }: Dash
 
   // Calculations
   const incomesSum = transactions
-    .filter((t) => t.type === "income" || t.amount > 0)
+    .filter((t) => (t.type as string) === "receita" || (t.type as string) === "income" || t.amount > 0)
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
   const expensesSum = transactions
-    .filter((t) => t.type === "expense" || t.amount < 0)
+    .filter((t) => (t.type as string) === "despesa" || (t.type as string) === "expense" || t.amount < 0)
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
   const totalBalance = incomesSum - expensesSum;
@@ -60,7 +60,7 @@ export default function DashboardGrid({ transactions, goals, onOpenModal }: Dash
   const currentYearStr = String(new Date().getFullYear());
   
   const currentMonthExpenses = transactions
-    .filter(t => (t.type === "expense" || t.amount < 0) && t.date.includes(`${currentYearStr}-${currentMonthStr}`))
+    .filter(t => ((t.type as string) === "despesa" || (t.type as string) === "expense" || t.amount < 0) && t.date.includes(`${currentYearStr}-${currentMonthStr}`))
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
   // Group transactions for line chart (last 7 entries or grouped by day)
@@ -78,7 +78,7 @@ export default function DashboardGrid({ transactions, goals, onOpenModal }: Dash
       if (!days[dateLabel]) {
         days[dateLabel] = { income: 0, expense: 0 };
       }
-      if (t.type === "income" || t.amount > 0) {
+      if ((t.type as string) === "receita" || (t.type as string) === "income" || t.amount > 0) {
         days[dateLabel].income += Math.abs(t.amount);
       } else {
         days[dateLabel].expense += Math.abs(t.amount);
@@ -103,9 +103,10 @@ export default function DashboardGrid({ transactions, goals, onOpenModal }: Dash
   const categoryChartData = () => {
     const categories: { [key: string]: number } = {};
     transactions
-      .filter(t => t.type === "expense" || t.amount < 0)
+      .filter(t => (t.type as string) === "despesa" || (t.type as string) === "expense" || t.amount < 0)
       .forEach(t => {
-        categories[t.category] = (categories[t.category] || 0) + Math.abs(t.amount);
+        const catName = t.category || "Geral";
+        categories[catName] = (categories[catName] || 0) + Math.abs(t.amount);
       });
 
     return Object.keys(categories).map(catKey => ({

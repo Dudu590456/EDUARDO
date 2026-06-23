@@ -21,7 +21,7 @@ export const PRESET_CATEGORIES: {
   internet: { label: "Internet", color: "text-indigo-400", bgColor: "bg-indigo-500/10", icon: "🌐", border: "border-indigo-500/30" },
   telefone: { label: "Telefone", color: "text-zinc-400", bgColor: "bg-zinc-500/10", icon: "📞", border: "border-zinc-500/30" },
   streaming: { label: "Streaming", color: "text-red-400", bgColor: "bg-red-500/10", icon: "🎬", border: "border-red-500/30" },
-  saude: { label: "Saúde", color: "text-red-500", bgColor: "bg-red-500/10", icon: "❤️", border: "border-red-500/30" },
+Saude: { label: "Saúde", color: "text-red-500", bgColor: "bg-red-500/10", icon: "❤️", border: "border-red-500/30" },
   academia: { label: "Academia", color: "text-fuchsia-400", bgColor: "bg-fuchsia-500/10", icon: "💪", border: "border-fuchsia-500/30" },
   educacao: { label: "Educação", color: "text-violet-400", bgColor: "bg-violet-500/10", icon: "📚", border: "border-violet-500/30" },
   aluguel: { label: "Aluguel", color: "text-indigo-400", bgColor: "bg-indigo-500/10", icon: "🏠", border: "border-indigo-500/30" },
@@ -42,73 +42,59 @@ export const INITIAL_TRANSACTIONS = (userId: string = "demo-user-id"): Transacti
   return [
     {
       id: "tx-1",
-      user_id: userId,
       description: "Aporte Mensal - Salário NexFin",
       amount: 8500.00,
-      type: "income",
+      type: "receita",
       category: "salario",
       date: `${currentYear}-${currentMonth}-05`,
-      observation: "Referente ao faturamento de consultoria sênior"
     },
     {
       id: "tx-2",
-      user_id: userId,
       description: "Supermercado Gourmet",
-      amount: -850.40,
-      type: "expense",
+      amount: 850.40,
+      type: "despesa",
       category: "mercado",
       date: `${currentYear}-${currentMonth}-10`,
-      observation: "Compras mensais com carnes e importados sem glúten"
     },
     {
       id: "tx-3",
-      user_id: userId,
       description: "Resgate de Dividendos",
       amount: 450.00,
-      type: "income",
+      type: "receita",
       category: "investimentos",
       date: `${currentYear}-${currentMonth}-15`,
-      observation: "Ações PETR4 e fundos imobiliários MXRF11"
     },
     {
       id: "tx-4",
-      user_id: userId,
       description: "Mensalidade da Academia Premium",
-      amount: -299.90,
-      type: "expense",
+      amount: 299.90,
+      type: "despesa",
       category: "academia",
       date: `${currentYear}-${currentMonth}-08`,
-      observation: "Plano Black VIP com direito a convidados"
     },
     {
       id: "tx-5",
-      user_id: userId,
       description: "Freelance Landing Page Web3",
       amount: 2200.00,
-      type: "income",
+      type: "receita",
       category: "freelance",
       date: `${currentYear}-${currentMonth}-18`,
-      observation: "Desenvolvimento Next.js e Tailwind para cliente do Canadá"
     },
     {
       id: "tx-6",
-      user_id: userId,
       description: "Combustível SUV Turbo",
-      amount: -220.00,
-      type: "expense",
+      amount: 220.00,
+      type: "despesa",
       category: "combustivel",
       date: `${currentYear}-${currentMonth}-14`,
-      observation: "Combustível aditivado posto BR Shell"
     },
     {
       id: "tx-7",
-      user_id: userId,
       description: "Investimento Tesouro Direto Selic",
-      amount: -1500.00,
-      type: "expense",
+      amount: 1500.00,
+      type: "despesa",
       category: "investimentos",
       date: `${currentYear}-${currentMonth}-06`,
-      observation: "Reserva de emergência líquida automática"
     }
   ];
 };
@@ -118,27 +104,27 @@ export const INITIAL_GOALS = (userId: string = "demo-user-id"): Goal[] => {
   return [
     {
       id: "gl-1",
-      user_id: userId,
       name: "Viagem Maldivas Gold",
       target_amount: 25000.00,
       current_amount: 12500.00,
-      limit_date: `${currentYear + 1}-02-28`
+      deadline: `${currentYear + 1}-02-28`,
+      active: true
     },
     {
       id: "gl-2",
-      user_id: userId,
       name: "Reserva de Independência",
       target_amount: 100000.00,
       current_amount: 65000.00,
-      limit_date: `${currentYear + 2}-12-31`
+      deadline: `${currentYear + 2}-12-31`,
+      active: true
     },
     {
       id: "gl-3",
-      user_id: userId,
       name: "Upgrade Setup Dev Gamer",
       target_amount: 15000.00,
       current_amount: 9200.00,
-      limit_date: `${new Date().getFullYear()}-12-25`
+      deadline: `${currentYear}-12-25`,
+      active: true
     }
   ];
 };
@@ -150,25 +136,21 @@ export const INITIAL_INSTALLMENTS = (userId: string = "demo-user-id"): Installme
   return [
     {
       id: "ins-1",
-      user_id: userId,
-      product_name: "MacBook Pro M4 32GB",
-      total_value: 12000.00,
-      total_installments: 12,
-      remaining_installments: 8,
-      value_per_installment: 1000.00,
-      start_date: `${currentYear}-${currentMonth}-01`,
-      category: "tecnologia"
+      description: "MacBook Pro M4 32GB",
+      total_amount: 12000.00,
+      installments_count: 12,
+      current_installment: 4,
+      active: true,
+      date_started: `${currentYear}-${currentMonth}-01`,
     },
     {
       id: "ins-2",
-      user_id: userId,
-      product_name: "iPhone 17 Pro Max Titanium",
-      total_value: 9600.00,
-      total_installments: 10,
-      remaining_installments: 6,
-      value_per_installment: 960.00,
-      start_date: `${currentYear}-${currentMonth}-15`,
-      category: "tecnologia"
+      description: "iPhone 17 Pro Max Titanium",
+      total_amount: 9600.00,
+      installments_count: 10,
+      current_installment: 4,
+      active: true,
+      date_started: `${currentYear}-${currentMonth}-15`,
     }
   ];
 };
